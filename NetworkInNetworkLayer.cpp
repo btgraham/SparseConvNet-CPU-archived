@@ -25,21 +25,21 @@ void dShrinkVectorForDropout(std::vector<float>& m, std::vector<float>& md, std:
   }
 }
 
-//Adam
+//Nesterov
 void dGradientDescent
-(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
+(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_weights,
  int nIn, int nOut, float learningRate, float momentum) {
   for (int i=0;i<nIn;i++) {
     for(int j=i; j<i+nOut; j++) {
-      d_momentum[j]=momentum*d_momentum[j]+(1-momentum)*d_delta[j];
-      d_v[j]=momentum*d_v[j]+(1-momentum)*powf(d_delta[j],2);
-      d_weights[j]=d_weights[j]-learningRate*d_momentum[j]/(powf(d_v[j],0.5)+0.00000001);
+      d_weights[j]-=d_momentum[j]*momentum;
+      d_momentum[j]=momentum*d_momentum[j]-learningRate*(1-momentum)*d_delta[j];
+      d_weights[j]=d_weights[j]+d_momentum[j]*(1+momentum);
     }
   }
 }
 
 void dGradientDescentShrunkMatrix
-(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
+(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_weights,
  int nOut,
  std::vector<int>& inFeaturesPresent, std::vector<int>& outFeaturesPresent,
  float learningRate,
@@ -49,24 +49,26 @@ void dGradientDescentShrunkMatrix
     int ii=inFeaturesPresent[i_]*nOut;
     for(int j=0; j<outFeaturesPresent.size(); j++) {
       int jj=outFeaturesPresent[j];
-      d_momentum[ii+jj]=momentum*d_momentum[ii+jj]+(1-momentum)*d_delta[i+j];
-      d_v[ii+jj]=momentum*d_v[ii+jj]+(1-momentum)*powf(d_delta[i+j],2);
-      d_weights[ii+jj]=d_weights[ii+jj]-learningRate*d_momentum[ii+jj]/(powf(d_v[ii+jj],0.5)+0.00000001);
+      //NAG light
+      d_weights[ii+jj]-=d_momentum[ii+jj]*momentum;
+      d_momentum[ii+jj]=momentum*d_momentum[ii+jj]-learningRate*(1-momentum)*d_delta[i+j];
+      d_weights[ii+jj]=d_weights[ii+jj]+d_momentum[ii+jj]*(1+momentum);
     }
   }
 }
 
 void dGradientDescentShrunkVector
-(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
+(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_weights,
  int nOut,
  std::vector<int>& outFeaturesPresent,
  float learningRate,
  float momentum) {
   for(int i=0; i<outFeaturesPresent.size(); i++) {
     int ii=outFeaturesPresent[i];
-    d_momentum[ii]=momentum*d_momentum[ii]+(1-momentum)*d_delta[i];
-    d_v[ii]=momentum*d_v[ii]+(1-momentum)*powf(d_delta[i],2);
-    d_weights[ii]=d_weights[ii]-learningRate*d_momentum[ii]/(powf(d_v[ii],0.5)+0.00000001);
+    //NAG light
+    d_weights[ii]-=d_momentum[ii]*momentum;
+    d_momentum[ii]=momentum*d_momentum[ii]-learningRate*(1-momentum)*d_delta[i];
+    d_weights[ii]=d_weights[ii]+d_momentum[ii]*(1+momentum);
   }
 }
 
@@ -93,15 +95,13 @@ NetworkInNetworkLayer::NetworkInNetworkLayer(int nFeaturesIn, int nFeaturesOut,
                                              ) :
   nFeaturesIn(nFeaturesIn), nFeaturesOut(nFeaturesOut),
   dropout(dropout), fn(fn),
-  W(nFeaturesIn*nFeaturesOut), MW(nFeaturesIn*nFeaturesOut), VW(nFeaturesIn*nFeaturesOut),
-  B(nFeaturesOut), MB(nFeaturesOut), VB(nFeaturesOut) {
+  W(nFeaturesIn*nFeaturesOut), MW(nFeaturesIn*nFeaturesOut),
+  B(nFeaturesOut), MB(nFeaturesOut) {
   float scale=pow(6.0f/(nFeaturesIn+nFeaturesOut*alpha),0.5f);
   W.setUniform(-scale,scale);
   MW.setZero();
-  VW.setUniform(1);
   B.setZero();
   MB.setZero();
-  VB.setUniform(1);
   std::cout << "Learn " << nFeaturesIn << "->" << nFeaturesOut << " dropout=" << dropout << " " << sigmoidNames[fn] << std::endl;
 }
 void NetworkInNetworkLayer::preprocess
@@ -194,13 +194,13 @@ void NetworkInNetworkLayer::backwards
     }
 
     dGradientDescentShrunkMatrix
-      (dw.vec, MW.vec, VW.vec, W.vec,
+      (dw.vec, MW.vec, W.vec,
        output.nFeatures,
        input.featuresPresent.vec, output.featuresPresent.vec,
        learningRate,momentum);
 
     dGradientDescentShrunkVector
-      (db.vec, MB.vec, VB.vec, B.vec,
+      (db.vec, MB.vec, B.vec,
        output.nFeatures,
        output.featuresPresent.vec,
        learningRate,momentum);
@@ -213,9 +213,9 @@ void NetworkInNetworkLayer::backwards
       multiplyAddCount+=(__int128_t)output.nSpatialSites*input.featuresPresent.size()*output.featuresPresent.size();
     }
     dGradientDescent
-      (dw.vec, MW.vec, VW.vec, W.vec, nFeaturesIn, nFeaturesOut, learningRate,momentum);
+      (dw.vec, MW.vec, W.vec, nFeaturesIn, nFeaturesOut, learningRate,momentum);
     dGradientDescent
-      (db.vec, MB.vec, VB.vec, B.vec, 1,           nFeaturesOut, learningRate,momentum);
+      (db.vec, MB.vec, B.vec, 1,           nFeaturesOut, learningRate,momentum);
   }
 }
 void NetworkInNetworkLayer::loadWeightsFromStream(std::ifstream &f) {

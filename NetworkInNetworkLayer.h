@@ -9,12 +9,10 @@ private:
 public:
   vectorCUDA<float> W; //Weights
   vectorCUDA<float> MW; //momentum
-  vectorCUDA<float> VW; //
   vectorCUDA<float> w; //shrunk versions
   vectorCUDA<float> dw; //For backprop
   vectorCUDA<float> B; //Weights
   vectorCUDA<float> MB; //momentum
-  vectorCUDA<float> VB; //
   vectorCUDA<float> b; //shrunk versions
   vectorCUDA<float> db; //For backprop
   ActivationFunction fn;
@@ -56,15 +54,15 @@ void dShrinkMatrixForDropout
 void dShrinkVectorForDropout
 (std::vector<float>& m, std::vector<float>& md, std::vector<int>& outFeaturesPresent);
 void dGradientDescent
-(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
+(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_weights,
  int nIn, int nOut, float learningRate, float momentum);
 void dGradientDescentShrunkMatrix
-(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
+(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_weights,
  int nOut,
  std::vector<int>& inFeaturesPresent, std::vector<int>& outFeaturesPresent,
  float learningRate,float momentum);
 void dGradientDescentShrunkVector
-(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
+(std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_weights,
  std::vector<int>& outFeaturesPresent,
  float learningRate,float momentum);
 void columnSum(std::vector<float>& matrix, std::vector<float>& target, int nRows, int nColumns);

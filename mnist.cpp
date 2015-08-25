@@ -40,14 +40,14 @@ int main() {
   testSet.summary();
 
   //CNN cnn(2,trainSet.nFeatures,trainSet.nClasses,0.0f);
-  DeepCNet cnn(2,5,32,VLEAKYRELU,trainSet.nFeatures,trainSet.nClasses,0.2f);
+  DeepCNet cnn(2,5,32,VLEAKYRELU,trainSet.nFeatures,trainSet.nClasses,0.5f);
 
   if (epoch>0)
     cnn.loadWeights(baseName,epoch);
   for (epoch++;;epoch++) {
     std::cout <<"epoch: " << epoch << " " << std::flush;
-    cnn.processDataset(trainSet, batchSize,0.001,0.999);
-    if (epoch%100==0) {
+    cnn.processDataset(trainSet, batchSize,0.003*exp(-epoch*0.01),0.99);
+    if (epoch%10==0) {
       cnn.saveWeights(baseName,epoch);
       cnn.processDataset(testSet,  batchSize);
     }

@@ -2,12 +2,10 @@
 #include "SpatiallySparseDatasetCIFAR10.h"
 
 int epoch=0;
-int cudaDevice=-1; //PCI bus ID, -1 for default GPU
 int batchSize=50;
 
 Picture* OpenCVPicture::distort(RNG& rng, batchType type) {
   OpenCVPicture* pic=new OpenCVPicture(*this);
-  pic->loadData();
   float
     c00=1, c01=0,  //2x2 identity matrix---starting point for calculating affine distortion matrix
     c10=0, c11=1;
@@ -34,12 +32,12 @@ Picture* OpenCVPicture::distort(RNG& rng, batchType type) {
 
 class DeepC2Triangular : public SparseConvNet {
 public:
-  DeepC2Triangular (int dimension, int l, int k, ActivationFunction fn, int nInputFeatures, int nClasses, float p=0.0f, int cudaDevice=-1, int nTop=1);
+  DeepC2Triangular (int dimension, int l, int k, ActivationFunction fn, int nInputFeatures, int nClasses, float p=0.0f, int nTop=1);
 };
 DeepC2Triangular::DeepC2Triangular
 (int dimension, int l, int k, ActivationFunction fn,
- int nInputFeatures, int nClasses, float p, int cudaDevice, int nTop)
-  : SparseConvNet(dimension,nInputFeatures, nClasses, cudaDevice, nTop) {
+ int nInputFeatures, int nClasses, float p, int nTop)
+  : SparseConvNet(dimension,nInputFeatures, nClasses, nTop) {
   for (int i=0;i<=l;i++) {
     addLeNetLayerMP((i+1)*k,2,1,1,1,fn,p*i*1.0f/l);
     addLeNetLayerMP((i+1)*k,2,1,(i<l)?3:1,(i<l)?2:1,fn,p*i*1.0f/l);
@@ -56,7 +54,7 @@ int main() {
 
   trainSet.summary();
   testSet.summary();
-  DeepC2Triangular cnn(2,5,32,VLEAKYRELU,trainSet.nFeatures,trainSet.nClasses,0.1f,cudaDevice);
+  DeepC2Triangular cnn(2,5,32,VLEAKYRELU,trainSet.nFeatures,trainSet.nClasses,0.1f);
 
   if (epoch>0) {
     cnn.loadWeights(baseName,epoch);
