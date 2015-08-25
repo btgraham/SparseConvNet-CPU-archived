@@ -4,7 +4,7 @@
 
 This is a CPU version of [SparseConvNet](https://github.com/btgraham/SparseConvNet), the spatially sparse convolutional neural network.
 
-Possibly useful if you don't have a GPU and are very patient. Or to distribute models trained on the GPU to people without GPus.
+Possibly useful if you don't have a GPU and are very patient. Or to distribute models trained on the GPU to GPU-less people.
 
 **************************************************************************
 SparseConvNet is free software: you can redistribute it and/or modify
