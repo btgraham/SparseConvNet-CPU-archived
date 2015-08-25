@@ -9,12 +9,12 @@
 
 void dGradientDescentShrunkMatrixNoMomentum
 (std::vector<float>& d_delta, std::vector<float>& d_weights,
- int nOut, int nInDropout, int nOutDropout,
+ int nOut,
  std::vector<int>& inFeaturesPresent, std::vector<int>& outFeaturesPresent,
  float learningRate) {
-  for (int i=0;i<nInDropout;i++) {
+  for (int i=0;i<inFeaturesPresent.size();i++) {
     int ii=inFeaturesPresent[i]*nOut;
-    for(int j=0; j<nOutDropout; j++) {
+    for(int j=0; j<outFeaturesPresent.size(); j++) {
       int jj=outFeaturesPresent[j];
       //no momentum, weight updated infrequently if the dataset is much larger than each minibatch
       d_weights[ii+jj]-=learningRate*d_delta[i+j];
@@ -53,9 +53,7 @@ void IndexLearnerLayer::forwards
   dShrinkMatrixForDropout(W.vec, w.vec,
                           input.featuresPresent.vec,
                           output.featuresPresent.vec,
-                          output.nFeatures,
-                          input.featuresPresent.size(),
-                          output.featuresPresent.size());
+                          output.nFeatures);
   d_rowMajorSGEMM_alphaAB_betaC(input.sub->features.vec, w.vec, output.sub->features.vec,
                                 output.nSpatialSites, input.featuresPresent.size(), output.featuresPresent.size(),
                                 1.0f, 0.0f);
@@ -81,7 +79,7 @@ void IndexLearnerLayer::backwards
   }
   dGradientDescentShrunkMatrixNoMomentum
     (dw.vec, W.vec,
-     output.nFeatures, input.featuresPresent.size(), output.featuresPresent.size(),
+     output.nFeatures,
      input.featuresPresent.vec, output.featuresPresent.vec,
      learningRate);
 }

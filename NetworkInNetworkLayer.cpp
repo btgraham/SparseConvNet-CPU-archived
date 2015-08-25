@@ -7,22 +7,25 @@
 void dShrinkMatrixForDropout
 (std::vector<float>& m, std::vector<float>& md,
  std::vector<int>& inFeaturesPresent, std::vector<int>& outFeaturesPresent,
- int nOut, int nInDropout, int nOutDropout) {
-  for (int i=0;i<nInDropout;i++) {
-    int ii=inFeaturesPresent[i]*nOut;
-    for (int j=0;j<nOutDropout;j++) {
+ int nOut) {
+  for (int i_=0;i_<inFeaturesPresent.size();i_++) {
+    int i=i_*outFeaturesPresent.size();
+    int ii=inFeaturesPresent[i_]*nOut;
+    for (int j=0;j<outFeaturesPresent.size();j++) {
       int jj=outFeaturesPresent[j];
       md[i+j]=m[ii+jj];
     }
   }
 }
 
-void dShrinkVectorForDropout(std::vector<float>& m, std::vector<float>& md, std::vector<int>& outFeaturesPresent, int nOut, int nOutDropout) {
-  for(int i=0; i<nOutDropout; i++) {
-    md[i]=m[outFeaturesPresent[i]];
+void dShrinkVectorForDropout(std::vector<float>& m, std::vector<float>& md, std::vector<int>& outFeaturesPresent) {
+  for(int i=0; i<outFeaturesPresent.size(); i++) {
+    int ii=outFeaturesPresent[i];
+    md[i]=m[ii];
   }
 }
 
+//Adam
 void dGradientDescent
 (std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
  int nIn, int nOut, float learningRate, float momentum) {
@@ -37,13 +40,14 @@ void dGradientDescent
 
 void dGradientDescentShrunkMatrix
 (std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
- int nOut, int nInDropout, int nOutDropout,
+ int nOut,
  std::vector<int>& inFeaturesPresent, std::vector<int>& outFeaturesPresent,
  float learningRate,
  float momentum) {
-  for (int i=0;i<nInDropout;i++) {
-    int ii=inFeaturesPresent[i]*nOut;
-    for(int j=0; j<nOutDropout; j++) {
+  for (int i_=0;i_<inFeaturesPresent.size();i_++) {
+    int i=i_*outFeaturesPresent.size();
+    int ii=inFeaturesPresent[i_]*nOut;
+    for(int j=0; j<outFeaturesPresent.size(); j++) {
       int jj=outFeaturesPresent[j];
       d_momentum[ii+jj]=momentum*d_momentum[ii+jj]+(1-momentum)*d_delta[i+j];
       d_v[ii+jj]=momentum*d_v[ii+jj]+(1-momentum)*powf(d_delta[i+j],2);
@@ -54,11 +58,11 @@ void dGradientDescentShrunkMatrix
 
 void dGradientDescentShrunkVector
 (std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
- int nOut, int nOutDropout,
+ int nOut,
  std::vector<int>& outFeaturesPresent,
  float learningRate,
  float momentum) {
-  for(int i=0; i<nOutDropout; i++) {
+  for(int i=0; i<outFeaturesPresent.size(); i++) {
     int ii=outFeaturesPresent[i];
     d_momentum[ii]=momentum*d_momentum[ii]+(1-momentum)*d_delta[i];
     d_v[ii]=momentum*d_v[ii]+(1-momentum)*powf(d_delta[i],2);
@@ -125,14 +129,10 @@ void NetworkInNetworkLayer::forwards
       (W.vec, w.vec,
        input.featuresPresent.vec,
        output.featuresPresent.vec,
-       output.nFeatures,
-       input.featuresPresent.size(),
-       output.featuresPresent.size());
+       output.nFeatures);
     b.resize(output.featuresPresent.size());
     dShrinkVectorForDropout(B.vec, b.vec,
-                            output.featuresPresent.vec,
-                            output.nFeatures,
-                            output.featuresPresent.size());
+                            output.featuresPresent.vec);
     replicateArray(b.vec, output.sub->features.vec, output.nSpatialSites, output.featuresPresent.size());
     d_rowMajorSGEMM_alphaAB_betaC(input.sub->features.vec, w.vec, output.sub->features.vec,
                                   output.nSpatialSites, input.featuresPresent.size(), output.featuresPresent.size(),
@@ -195,13 +195,13 @@ void NetworkInNetworkLayer::backwards
 
     dGradientDescentShrunkMatrix
       (dw.vec, MW.vec, VW.vec, W.vec,
-       output.nFeatures, input.featuresPresent.size(), output.featuresPresent.size(),
+       output.nFeatures,
        input.featuresPresent.vec, output.featuresPresent.vec,
        learningRate,momentum);
 
     dGradientDescentShrunkVector
       (db.vec, MB.vec, VB.vec, B.vec,
-       output.nFeatures, output.featuresPresent.size(),
+       output.nFeatures,
        output.featuresPresent.vec,
        learningRate,momentum);
   } else {

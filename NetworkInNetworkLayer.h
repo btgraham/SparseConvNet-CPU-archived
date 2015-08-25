@@ -52,20 +52,19 @@ public:
 void dShrinkMatrixForDropout
 (std::vector<float>& m, std::vector<float>& md,
  std::vector<int>& inFeaturesPresent, std::vector<int>& outFeaturesPresent,
- int nOut, int nInDropout, int nOutDropout);
+ int nOut);
 void dShrinkVectorForDropout
-(std::vector<float>& m, std::vector<float>& md, std::vector<int>& outFeaturesPresent, int nOut, int nOutDropout);
+(std::vector<float>& m, std::vector<float>& md, std::vector<int>& outFeaturesPresent);
 void dGradientDescent
 (std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
  int nIn, int nOut, float learningRate, float momentum);
 void dGradientDescentShrunkMatrix
 (std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
- int nOut, int nInDropout, int nOutDropout,
+ int nOut,
  std::vector<int>& inFeaturesPresent, std::vector<int>& outFeaturesPresent,
  float learningRate,float momentum);
 void dGradientDescentShrunkVector
 (std::vector<float>& d_delta, std::vector<float>& d_momentum, std::vector<float>& d_v, std::vector<float>& d_weights,
- int nOut, int nOutDropout,
  std::vector<int>& outFeaturesPresent,
  float learningRate,float momentum);
 void columnSum(std::vector<float>& matrix, std::vector<float>& target, int nRows, int nColumns);

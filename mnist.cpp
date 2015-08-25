@@ -7,11 +7,9 @@ int batchSize=100;
 
 Picture* OpenCVPicture::distort(RNG& rng, batchType type) {
   OpenCVPicture* pic=new OpenCVPicture(*this);
-  return pic; //No data augmentation
-  // pic->loadData();
-  // if (type==TRAINBATCH)
-  //   pic->jiggle(rng,2);
-  //return pic;
+  if (type==TRAINBATCH) //Data augmentation by translations
+    pic->jiggle(rng,2);
+  return pic;
 }
 
 class CNN : public SparseConvNet {
@@ -38,18 +36,18 @@ int main() {
 
   SpatiallySparseDataset trainSet=MnistTrainSet();
   SpatiallySparseDataset testSet=MnistTestSet();
-
   trainSet.summary();
   testSet.summary();
-  CNN cnn(2,trainSet.nFeatures,trainSet.nClasses,0.0f);
-  //DeepCNet cnn(2,5,32,VLEAKYRELU,trainSet.nFeatures,trainSet.nClasses,0.0f);
+
+  //CNN cnn(2,trainSet.nFeatures,trainSet.nClasses,0.0f);
+  DeepCNet cnn(2,5,32,VLEAKYRELU,trainSet.nFeatures,trainSet.nClasses,0.2f);
 
   if (epoch>0)
     cnn.loadWeights(baseName,epoch);
   for (epoch++;;epoch++) {
     std::cout <<"epoch: " << epoch << " " << std::flush;
-    cnn.processDataset(trainSet, batchSize,0.001);
-    if (epoch%10==0) {
+    cnn.processDataset(trainSet, batchSize,0.001,0.999);
+    if (epoch%100==0) {
       cnn.saveWeights(baseName,epoch);
       cnn.processDataset(testSet,  batchSize);
     }
